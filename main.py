@@ -6,9 +6,12 @@ from random import randint
 
 
 class World:
-    def __init__(self, size):
+    def __init__(self, size, bounces, blocks, verbose):
         self.rows = size[0]
         self.columns = size[1]
+        self.max_bounces = bounces
+        self.blocks = blocks
+        self.verbose = verbose
         self.content = [[-1 for _ in range(self.columns)] for _ in range(self.rows)]
         self.light = [self.rows//2, self.columns//2]
         self.content[self.light[0]][self.light[1]] = -2
@@ -42,7 +45,7 @@ class World:
     def __str__(self):
         # chars = ["▔", "▁", "▏", "▕", "╲", "╱", "╳", " ", "@"]
         # chars = ["▔", "╲", "▕", "╱", "▁", "╲", "▏", "╱", "╳", "@", " "]
-        chars = ["─", "╲", "│", "╱", "─", "╲", "│", "╱", "┼", "╳", "█", "@", " "]
+        chars = ["─", "╲", "│", "╱", "─", "╲", "│", "╱", "┼", "╳", "░", "▒", "▓", "█", "@", " "]
 
         sys.stdout.write("\x1b[H")
         sys.stdout.flush()
@@ -67,17 +70,25 @@ class World:
 
         direction = randint(0, 7)
         pos = self.light
-        length = 0
-        while length < max(self.rows, self.columns):
+        bounces = 0
+        while bounces < self.max_bounces:
             pos = list(map(add, pos, self.directions[direction]))
-            length += 1
             while 0 <= pos[0] < self.rows and 0 <= pos[1] < self.columns:
-                if self.content[pos[0]][pos[1]] in [-2, 10]:
-                    # Hit a light source or object
+                if self.content[pos[0]][pos[1]] in [-2, -3]:
+                    # Hit a light source or object TODO: handle light/object collisions
                     break
                 if self.content[pos[0]][pos[1]] is not -1:
                     # Already light in point
-                    if self.content[pos[0]][pos[1]] not in [direction, self.reverse_map[direction]]:
+                    if self.blocks and self.content[pos[0]][pos[1]] in [8, 9]:
+                        # Replace busy intersections with blocks
+                        self.content[pos[0]][pos[1]] = 10
+                    elif self.blocks and self.content[pos[0]][pos[1]] is 10:
+                        # Replace busy intersections with blocks
+                        self.content[pos[0]][pos[1]] = 11
+                    elif self.blocks and self.content[pos[0]][pos[1]] in [11, 12]:
+                        # Replace busy intersections with blocks
+                        self.content[pos[0]][pos[1]] = 12
+                    elif self.content[pos[0]][pos[1]] not in [direction, self.reverse_map[direction]]:
                         if direction in [0, 2, 4, 6]:
                             self.content[pos[0]][pos[1]] = 8
                         else:
@@ -85,8 +96,10 @@ class World:
                 else:
                     self.content[pos[0]][pos[1]] = direction
                 pos = list(map(add, pos, self.directions[direction]))
-                length += 1
 
+                if self.verbose:
+                    print(self)
+            if not self.verbose:
                 print(self)
 
             # Bounce
@@ -95,22 +108,19 @@ class World:
             if pos[1] < 0 or pos[1] >= self.columns:
                 direction = self.bounce_map_hori[direction]
 
+            bounces += 1
+
 
 def main(size):
-    world = World(size)
+    world = World(size, 3, True, False)
 
     world.start()
 
-    for _ in range(5):
+    for _ in range(10):
         world.set_light_source(randint(0, size[0]-1), randint(0, size[1]-1))
-        for progress in range(20):
+        for progress in range(15):
             world.next()
-            time.sleep(0.1)
-
-    # world.set_light_source(randint(0, size[0]-1), randint(0, size[1]-1))
-    # for progress in range(20):
-    #     world.next()
-    #     time.sleep(0.1)
+            # time.sleep(0.05)
 
     world.end()
 
