@@ -19,9 +19,13 @@ class World:
         self.bounce_map_hori = [4, 3, None, 1, 0, 7, None, 5]
 
     def set_light_source(self, x, y):
-        self.content[self.light[0]][self.light[1]] = -1
-        self.light = [x, y]
-        self.content[self.light[0]][self.light[1]] = -2
+        if 0 <= x < self.rows and 0 <= y < self.columns:
+            self.content[self.light[0]][self.light[1]] = -1
+            self.light = [x, y]
+            self.content[self.light[0]][self.light[1]] = -2
+        else:
+            print("Light placed outside world")
+            sys.exit(1)
 
     def start(self):
         max_columns, max_rows = get_terminal_size()
@@ -96,14 +100,17 @@ def main(size):
     world = World(size)
 
     world.start()
-    for progress in range(20):
-        world.next()
-        time.sleep(0.1)
 
-    world.set_light_source(10, 5)
-    for progress in range(20):
-        world.next()
-        time.sleep(0.1)
+    for _ in range(5):
+        world.set_light_source(randint(0, size[0]-1), randint(0, size[1]-1))
+        for progress in range(20):
+            world.next()
+            time.sleep(0.1)
+
+    # world.set_light_source(randint(0, size[0]-1), randint(0, size[1]-1))
+    # for progress in range(20):
+    #     world.next()
+    #     time.sleep(0.1)
 
     world.end()
 
