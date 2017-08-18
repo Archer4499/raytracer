@@ -34,7 +34,7 @@ class World:
         max_columns, max_rows = get_terminal_size()
 
         # Check console dimensions
-        if max_columns < len(self.content[0])+3 or max_rows < len(self.content)+3:
+        if max_columns < self.columns+3 or max_rows < self.rows+3:
             print("Console is too small for specified grid")
             sys.exit(1)
 
@@ -66,8 +66,6 @@ class World:
         sys.stdout.flush()
 
     def next(self):
-        # self.content[randint(0, self.rows - 1)][randint(0, self.columns - 1)] = randint(1, 7)
-
         direction = randint(0, 7)
         pos = self.light
         bounces = 0
@@ -88,6 +86,7 @@ class World:
                     elif self.blocks and self.content[pos[0]][pos[1]] in [11, 12]:
                         # Replace busy intersections with blocks
                         self.content[pos[0]][pos[1]] = 12
+
                     elif self.content[pos[0]][pos[1]] not in [direction, self.reverse_map[direction]]:
                         if direction in [0, 2, 4, 6]:
                             self.content[pos[0]][pos[1]] = 8
@@ -112,13 +111,13 @@ class World:
 
 
 def main(size):
-    world = World(size, 3, True, False)
+    world = World(size, 3, True, True)
 
     world.start()
 
-    for _ in range(10):
+    for _ in range(2):
         world.set_light_source(randint(0, size[0]-1), randint(0, size[1]-1))
-        for progress in range(15):
+        for progress in range(20):
             world.next()
             # time.sleep(0.05)
 
@@ -131,19 +130,24 @@ if __name__ == '__main__':
     #   1 if error while running
     #   2 if invalid arguments
 
-    # Reads the size of the world from commandline
-    if len(sys.argv) is not 3:
-        print("Incorrect arguments")
-        print("Usage:", sys.argv[0], "rows columns")
+    # Reads the size of the world from commandline or uses terminal size if not given
+    if len(sys.argv) is 1:
+        max_size = get_terminal_size()
+        size = [max_size[1]-3, max_size[0]-3]
+        print(size)
+        if size[0] < 1 or size[1] < 1:
+            print("Terminal is too small")
+            sys.exit(2)
+    elif len(sys.argv) is 3:
+        try:
+            size = int(sys.argv[1]), int(sys.argv[2])
+        except ValueError:
+            print("Given arguments not integers")
+            print("Usage:", sys.argv[0], "[rows columns]")
+            sys.exit(2)
+    else:
+        print("Incorrect arguments given")
+        print("Usage:", sys.argv[0], "[rows columns]")
         sys.exit(2)
 
-    try:
-        size = int(sys.argv[1]), int(sys.argv[2])
-    except ValueError:
-        print("Given arguments not integers")
-        print("Usage:", sys.argv[0], "rows columns")
-        sys.exit(2)
-
-    # size = 15, 20
-    # size = 4, 8
     main(size)
