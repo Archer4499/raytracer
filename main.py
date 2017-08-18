@@ -6,12 +6,12 @@ from random import randint
 
 
 class World:
-    def __init__(self, size, bounces, blocks, verbose):
+    def __init__(self, size, bounces, blocks, slow):
         self.rows = size[0]
         self.columns = size[1]
         self.max_bounces = bounces
         self.blocks = blocks
-        self.verbose = verbose
+        self.slow = slow
         self.content = [[-1 for _ in range(self.columns)] for _ in range(self.rows)]
         self.light = [self.rows//2, self.columns//2]
         self.content[self.light[0]][self.light[1]] = -2
@@ -45,7 +45,8 @@ class World:
     def __str__(self):
         # chars = ["▔", "▁", "▏", "▕", "╲", "╱", "╳", " ", "@"]
         # chars = ["▔", "╲", "▕", "╱", "▁", "╲", "▏", "╱", "╳", "@", " "]
-        chars = ["─", "╲", "│", "╱", "─", "╲", "│", "╱", "┼", "╳", "░", "▒", "▓", "█", "@", " "]
+        chars = ["─", "╲", "│", "╱", "─", "╲", "│", "╱", "┼", "╳",
+                 "░", "▒", "▓", "█", "⦀", "@", " "]
 
         sys.stdout.write("\x1b[H")
         sys.stdout.flush()
@@ -65,6 +66,53 @@ class World:
         sys.stdout.write("\x1b[?25h")
         sys.stdout.flush()
 
+    def calculate_point(self, point, direction):
+        if point in [-2, -3]:
+            # Hit a light source or object
+            # TODO: handle light/object collisions better
+            return None
+
+        if self.blocks is 0:
+            # Just lines, no blocks
+            if point is not -1:
+                # Already light in point
+                if point not in [direction, self.reverse_map[direction]]:
+                    if direction in [0, 2, 4, 6]:
+                        point = 8
+                    else:
+                        point = 9
+            else:
+                # No light or object in point yet
+                point = direction
+        elif self.blocks is 1:
+            # Replace busy intersections with blocks
+            if point is not -1:
+                # Already light in point
+                if point in [8, 9]:
+                    point = 10
+                elif point is 10:
+                    point = 11
+                elif point is 11:
+                    point = 12
+                elif point in [12, 13]:
+                    point = 13
+                elif point not in [direction, self.reverse_map[direction]]:
+                    if direction in [0, 2, 4, 6]:
+                        point = 8
+                    else:
+                        point = 9
+            else:
+                # No light or object in point yet
+                point = direction
+        elif self.blocks is 2:
+            # Just blocks, no lines
+            if point is -1:
+                point = 10
+            elif point < 13:
+                point += 1
+
+        return point
+
     def next(self):
         direction = randint(0, 7)
         pos = self.light
@@ -72,36 +120,26 @@ class World:
         while bounces < self.max_bounces:
             pos = list(map(add, pos, self.directions[direction]))
             while 0 <= pos[0] < self.rows and 0 <= pos[1] < self.columns:
-                if self.content[pos[0]][pos[1]] in [-2, -3]:
-                    # Hit a light source or object TODO: handle light/object collisions
-                    break
-                if self.content[pos[0]][pos[1]] is not -1:
-                    # Already light in point
-                    if self.blocks and self.content[pos[0]][pos[1]] in [8, 9]:
-                        # Replace busy intersections with blocks
-                        self.content[pos[0]][pos[1]] = 10
-                    elif self.blocks and self.content[pos[0]][pos[1]] is 10:
-                        # Replace busy intersections with blocks
-                        self.content[pos[0]][pos[1]] = 11
-                    elif self.blocks and self.content[pos[0]][pos[1]] in [11, 12]:
-                        # Replace busy intersections with blocks
-                        self.content[pos[0]][pos[1]] = 12
 
-                    elif self.content[pos[0]][pos[1]] not in [direction, self.reverse_map[direction]]:
-                        if direction in [0, 2, 4, 6]:
-                            self.content[pos[0]][pos[1]] = 8
-                        else:
-                            self.content[pos[0]][pos[1]] = 9
-                else:
-                    self.content[pos[0]][pos[1]] = direction
+                curr_point = self.calculate_point(self.content[pos[0]][pos[1]], direction)
+
+                if curr_point is None:
+                    # Hit object or light source
+                    bounces = self.max_bounces
+                    break
+
+                self.content[pos[0]][pos[1]] = curr_point
+                # Move to next point
                 pos = list(map(add, pos, self.directions[direction]))
 
-                if self.verbose:
+                if self.slow:
+                    # Print each point
                     print(self)
-            if not self.verbose:
+            if not self.slow:
+                # Or print each line
                 print(self)
 
-            # Bounce
+            # Calculate bounce
             if pos[0] < 0 or pos[0] >= self.rows:
                 direction = self.bounce_map_vert[direction]
             if pos[1] < 0 or pos[1] >= self.columns:
@@ -111,7 +149,7 @@ class World:
 
 
 def main(size):
-    world = World(size, 3, True, True)
+    world = World(size, 5, 2, True)
 
     world.start()
 
