@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 from operator import add
 from shutil import get_terminal_size
@@ -14,7 +16,7 @@ class World:
         self.content = [[-1 for _ in range(self.columns)] for _ in range(self.rows)]
         self.light = [self.rows//2, self.columns//2]
         self.content[self.light[0]][self.light[1]] = -2
-        
+
         self.directions = [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]]
         self.reverse_map = [4, 5, 6, 7, 0, 1, 2, 3]
         self.bounce_map_vert = [None, 7, 6, 5, None, 3, 2, 1]
@@ -40,6 +42,8 @@ class World:
         sys.stdout.write("\x1b[?25l")
         sys.stdout.write("\x1b[2J")
         sys.stdout.flush()
+
+        return self
 
     def __str__(self):
         # chars = ["▔", "▁", "▏", "▕", "╲", "╱", "╳", " ", "@"]
@@ -150,7 +154,7 @@ class World:
 def main(size):
     num_lights = 2
 
-    with World(size, 5, 2, True) as world:
+    with World(size, 5, 0, True) as world:
         for _ in range(num_lights):
             world.set_light_source(randint(0, size[0]-1), randint(0, size[1]-1))
             for progress in range(20):
