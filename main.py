@@ -1,5 +1,4 @@
 import sys
-import time
 from operator import add
 from shutil import get_terminal_size
 from random import randint
@@ -30,7 +29,7 @@ class World:
             print("Light placed outside world")
             sys.exit(1)
 
-    def start(self):
+    def __enter__(self):
         max_columns, max_rows = get_terminal_size()
 
         # Check console dimensions
@@ -60,7 +59,7 @@ class World:
 
         return output
 
-    def end(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         height = self.rows+3
         sys.stdout.write("\x1b[{}H".format(height))
         sys.stdout.write("\x1b[?25h")
@@ -149,17 +148,13 @@ class World:
 
 
 def main(size):
-    world = World(size, 5, 2, True)
+    num_lights = 2
 
-    world.start()
-
-    for _ in range(2):
-        world.set_light_source(randint(0, size[0]-1), randint(0, size[1]-1))
-        for progress in range(20):
-            world.next()
-            # time.sleep(0.05)
-
-    world.end()
+    with World(size, 5, 2, True) as world:
+        for _ in range(num_lights):
+            world.set_light_source(randint(0, size[0]-1), randint(0, size[1]-1))
+            for progress in range(20):
+                world.next()
 
 
 if __name__ == '__main__':
@@ -172,7 +167,7 @@ if __name__ == '__main__':
     if len(sys.argv) is 1:
         max_size = get_terminal_size()
         size = [max_size[1]-3, max_size[0]-3]
-        print(size)
+
         if size[0] < 1 or size[1] < 1:
             print("Terminal is too small")
             sys.exit(2)
